@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Azure.Management.DataLake.Analytics;
 using Microsoft.Azure.Management.DataLake.Analytics.Models;
 using Microsoft.Azure.Management.DataLake.Store;
 using Microsoft.Azure.Management.DataLake.Store.Models;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Rest.Azure.Authentication;
 
 namespace Daishi.Playground.AzureDataLake
@@ -49,13 +51,32 @@ namespace Daishi.Playground.AzureDataLake
 
             // User login via interactive popup
             // Use the client ID of an existing AAD "Native Client" application.
+            //SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+            //const string domain = "ryanair.com";
+            //// Replace this string with the user's Azure Active Directory tenant ID or domain name, if needed.
+            //const string nativeClientAppClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
+            //var activeDirectoryClientSettings = ActiveDirectoryClientSettings.UsePromptOnly(nativeClientAppClientId,
+            //    new Uri("urn:ietf:wg:oauth:2.0:oob"));
+            //var creds = UserTokenProvider.LoginWithPromptAsync(domain, activeDirectoryClientSettings).Result;
+
+            // Service principal / application authentication with certificate
+            // Use the client ID and certificate of an existing AAD "Web App" application.
+
+            var fs = new FileStream(@"C:\Users\mooneyp\Downloads\cert.pfx", FileMode.Open);
+            var certBytes = new byte[fs.Length];
+            fs.Read(certBytes, 0, (int) fs.Length);
+            fs.Close();
+            var cert = new X509Certificate2(certBytes, "M3c54n1c4L\"1");
+            Console.WriteLine(cert.GetPublicKey());
+            Console.WriteLine(cert.GetPublicKeyString());
+
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
-            const string domain = "ryanair.com";
-            // Replace this string with the user's Azure Active Directory tenant ID or domain name, if needed.
-            const string nativeClientAppClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
-            var activeDirectoryClientSettings = ActiveDirectoryClientSettings.UsePromptOnly(nativeClientAppClientId,
-                new Uri("urn:ietf:wg:oauth:2.0:oob"));
-            var creds = UserTokenProvider.LoginWithPromptAsync(domain, activeDirectoryClientSettings).Result;
+            var domain = "ryanair.com";
+            var webApp_clientId = "e414f5b8-91af-410d-8740-330e077cbb5f";
+            var clientCert = cert;
+            var clientAssertionCertificate = new ClientAssertionCertificate(webApp_clientId, clientCert);
+            var creds =
+                ApplicationTokenProvider.LoginSilentWithCertificateAsync(domain, clientAssertionCertificate).Result;
 
             _adlsClient = new DataLakeStoreAccountManagementClient(creds);
             _adlsFileSystemClient = new DataLakeStoreFileSystemManagementClient(creds);
@@ -157,6 +178,7 @@ namespace Daishi.Playground.AzureDataLake
                 jobId: jobId);
 
             var jobInfo = _adlaJobClient.Job.Create("shield", jobId, parameters);
+
             return jobId;
         }
 
