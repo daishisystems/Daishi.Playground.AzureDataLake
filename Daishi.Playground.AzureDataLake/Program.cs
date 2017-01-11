@@ -91,15 +91,13 @@ namespace Daishi.Playground.AzureDataLake
 
             _adlsClient.SubscriptionId = _subId;
 
-            Console.WriteLine("Reading files...");
-            var files = ListItems($"/events/v5/{year}/{month}/{day}");
-
             var jobId = CreateDataSource(dataSource);
             Console.WriteLine("Creating {0}...", dataSource);
             WaitForJob(jobId);
             Console.WriteLine("{0} created.", dataSource);
 
-            
+            Console.WriteLine("Reading files...");
+            var files = ListItems($"/events/v5/{year}/{month}/{day}");
 
             if (!files.Any())
             {
