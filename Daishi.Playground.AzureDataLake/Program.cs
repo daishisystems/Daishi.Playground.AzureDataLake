@@ -70,13 +70,20 @@ namespace Daishi.Playground.AzureDataLake
             Console.WriteLine(cert.GetPublicKey());
             Console.WriteLine(cert.GetPublicKeyString());
 
+            //SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+            //var domain = "ryanair.com";
+            //var webApp_clientId = "e414f5b8-91af-410d-8740-330e077cbb5f";
+            //var clientCert = cert;
+            //var clientAssertionCertificate = new ClientAssertionCertificate(webApp_clientId, clientCert);
+            //var creds =
+            //    ApplicationTokenProvider.LoginSilentWithCertificateAsync(domain, clientAssertionCertificate).Result;
+
             SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
             var domain = "ryanair.com";
-            var webApp_clientId = "e414f5b8-91af-410d-8740-330e077cbb5f";
-            var clientCert = cert;
-            var clientAssertionCertificate = new ClientAssertionCertificate(webApp_clientId, clientCert);
-            var creds =
-                ApplicationTokenProvider.LoginSilentWithCertificateAsync(domain, clientAssertionCertificate).Result;
+            var webApp_clientId = "1fd3b517-4200-4f5b-a7c6-1d73727c44d9";
+            var clientSecret = "/BtVXlmItAy3JXKCBx9nOLmiqNabcGcPuQ6ga4CxMa0=";
+            var clientCredential = new ClientCredential(webApp_clientId, clientSecret);
+            var creds = ApplicationTokenProvider.LoginSilentAsync(domain, clientCredential).Result;
 
             _adlsClient = new DataLakeStoreAccountManagementClient(creds);
             _adlsFileSystemClient = new DataLakeStoreFileSystemManagementClient(creds);
@@ -84,13 +91,15 @@ namespace Daishi.Playground.AzureDataLake
 
             _adlsClient.SubscriptionId = _subId;
 
+            Console.WriteLine("Reading files...");
+            var files = ListItems($"/events/v5/{year}/{month}/{day}");
+
             var jobId = CreateDataSource(dataSource);
             Console.WriteLine("Creating {0}...", dataSource);
             WaitForJob(jobId);
             Console.WriteLine("{0} created.", dataSource);
 
-            Console.WriteLine("Reading files...");
-            var files = ListItems($"/events/v5/{year}/{month}/{day}");
+            
 
             if (!files.Any())
             {
